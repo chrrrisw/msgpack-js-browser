@@ -152,13 +152,6 @@ exports.encode = function (value) {
 exports.decode = decode;
 
 // http://wiki.msgpack.org/display/MSGPACK/Format+specification
-// I've extended the protocol to have two new types that were previously reserved.
-//   buffer 16  11011000  0xd8
-//   buffer 32  11011001  0xd9
-// These work just like raw16 and raw32 except they are node buffers instead of strings.
-//
-// Also I've added a type for `undefined`
-//   undefined  11000100  0xc4
 
 function Decoder(view, offset) {
   this.offset = offset || 0;
@@ -178,7 +171,7 @@ Decoder.prototype.buf = function (length) {
   this.offset += length;
   return value;
 };
-Decoder.prototype.raw = function (length) {
+Decoder.prototype.u8str = function (length) {
   var value = utf8Read(this.view, this.offset, length);
   this.offset += length;
   return value;
@@ -190,10 +183,11 @@ Decoder.prototype.array = function (length) {
   }
   return value;
 };
+
 Decoder.prototype.parse = function () {
   var type = this.view.getUint8(this.offset);
   var value, length;
-  // FixRaw
+  // FixStr
   if ((type & 0xe0) === 0xa0) {
     length = type & 0x1f;
     this.offset++;
@@ -222,17 +216,24 @@ Decoder.prototype.parse = function () {
     this.offset++;
     return value;
   }
+
   switch (type) {
-  // raw 16
+
+  // str 8
+  case 0xd9:
+    length = this.view.getUint8(this.offset + 1);
+    this.offset += 2;
+    return this.u8str(length);
+  // str 16
   case 0xda:
     length = this.view.getUint16(this.offset + 1);
     this.offset += 3;
-    return this.raw(length);
-  // raw 32
+    return this.u8str(length);
+  // str 32
   case 0xdb:
     length = this.view.getUint32(this.offset + 1);
     this.offset += 5;
-    return this.raw(length);
+    return this.u8str(length);
   // nil
   case 0xc0:
     this.offset++;
@@ -245,10 +246,24 @@ Decoder.prototype.parse = function () {
   case 0xc3:
     this.offset++;
     return true;
-  // undefined
+  // bin 8
+  // CRW new
   case 0xc4:
-    this.offset++;
-    return undefined;
+    length = this.view.getUint8(this.offset + 1);
+    this.offset += 2;
+    return this.buf(length);
+  // bin 16
+  // CRW new
+  case 0xc5:
+    length = this.view.getUint16(this.offset + 1);
+    this.offset += 3;
+    return this.buf(length);
+  // bin 32
+  // CRW new
+  case 0xc6:
+    length = this.view.getUint32(this.offset + 1);
+    this.offset += 5;
+    return this.buf(length);
   // uint8
   case 0xcc:
     value = this.view.getUint8(this.offset + 1);
@@ -263,6 +278,13 @@ Decoder.prototype.parse = function () {
   case 0xce:
     value = this.view.getUint32(this.offset + 1);
     this.offset += 5;
+    return value;
+  // uint 64
+  // CRW new - unhandled
+  case 0xcf:
+    //value = this.view.getUint64(this.offset + 1);
+    value = 0;
+    this.offset += 9;
     return value;
   // int 8
   case 0xd0:
@@ -279,6 +301,43 @@ Decoder.prototype.parse = function () {
     value = this.view.getInt32(this.offset + 1);
     this.offset += 5;
     return value;
+  // int 64
+  // CRW new - unhandled
+  case 0xd3:
+    //value = this.view.getInt64(this.offset + 1);
+    value = 0;
+    this.offset += 9;
+    return value;
+  // fixext 1
+  // CRW unhandled
+  case 0xd4:
+    length = 1;
+    this.offset++;
+    return this.fixext(length);
+  // fixext 2
+  // CRW unhandled
+  case 0xd5:
+    length = 2;
+    this.offset++;
+    return this.fixext(length);
+  // fixext 4
+  // CRW unhandled
+  case 0xd6:
+    length = 4;
+    this.offset++;
+    return this.fixext(length);
+  // fixext 8
+  // CRW unhandled
+  case 0xd7:
+    length = 8;
+    this.offset++;
+    return this.fixext(length);
+  // fixext 16
+  // CRW unhandled
+  case 0xd8:
+    length = 16;
+    this.offset++;
+    return this.fixext(length);
   // map 16
   case 0xde:
     length = this.view.getUint16(this.offset + 1);
@@ -299,16 +358,24 @@ Decoder.prototype.parse = function () {
     length = this.view.getUint32(this.offset + 1);
     this.offset += 5;
     return this.array(length);
-  // buffer 16
-  case 0xd8:
+  // ext 8
+  // CRW new
+  case 0xc7:
+    length = this.view.getUint8(this.offset + 1);
+    this.offset += 2;
+    return this.ext(length);
+  // ext 16
+  // CRW new
+  case 0xc8:
     length = this.view.getUint16(this.offset + 1);
     this.offset += 3;
-    return this.buf(length);
-  // buffer 32
-  case 0xd9:
+    return this.ext(length);
+  // ext 32
+  // CRW new
+  case 0xc9:
     length = this.view.getUint32(this.offset + 1);
     this.offset += 5;
-    return this.buf(length);
+    return this.ext(length);
   // float
   case 0xca:
     value = this.view.getFloat32(this.offset + 1);
@@ -322,6 +389,7 @@ Decoder.prototype.parse = function () {
   }
   throw new Error("Unknown type 0x" + type.toString(16));
 };
+
 function decode(buffer) {
   var view = new DataView(buffer);
   var decoder = new Decoder(view);
