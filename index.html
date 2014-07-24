@@ -38,6 +38,27 @@ function Buffer(string) {
     return buffer;
 }
 
+function LengthBuffer(length) {
+    var buffer = new ArrayBuffer(length);
+    var view = new Uint8Array(buffer);
+    for (var i = 0; i < length; i++) {
+        view[i] = i % 256;
+    }
+    return buffer;
+}
+
+function CompareBuffers(buf1, buf2) {
+    if (buf1.byteLength != buf2.byteLength) return false;
+    var view1 = new Uint8Array(buf1);
+    var view2 = new Uint8Array(buf2);
+    for (var i = 0; i < buf1.byteLength; i++) {
+        if (view1[i] != view2[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 var tests = [
   "$", "¢", "€",
   "임창진",
@@ -49,34 +70,68 @@ var tests = [
   0x20000, -0x20000, 0x40000,-0x40000,
   10, 100, 1000, 10000, 100000, 1000000,
   -10, -100, -1000, -10000, -100000, -1000000,
-  'hello', 'world', Buffer("Hello"), Buffer("World"),
+  'hello', 'world', Buffer("Hello"), Buffer("World"), LengthBuffer(10),
   [1,2,3], [], {name: "Tim", age: 29}, {},
   {a: 1, b: 2, c: [1, 2, 3]}, [[],[]]
 ];
 
+    // Get the body of the table
     var body = document.querySelector("tbody");
+    
     tests.forEach(function (value) {
+        // Encode and decode value
         var buffer = msgpack.encode(value);
         var decoded = msgpack.decode(buffer);
+        // Compare string representation to determine status
         var valueString = msgpack.inspect(value);
         var decodedString = msgpack.inspect(decoded);
         var passed = valueString === decodedString;
+        // Log it to console
         console[(passed ? "log" : "error")](value, msgpack.inspect(buffer), decoded);
 
+        // Create rows and data
         var tr = document.createElement("tr");
+        
         var td = document.createElement("td");
         td.textContent = valueString;
         tr.appendChild(td);
+        
         td = document.createElement("td");
         td.textContent = msgpack.inspect(buffer);
         tr.appendChild(td);
+        
         td = document.createElement("td");
-        td.textContent = decodedString
+        td.textContent = decodedString;
         tr.appendChild(td);
+        
         tr.setAttribute("class", passed ? "passed" : "failed");
-        tr.appendChild(td);
+        
         body.appendChild(tr);
     });
+    
+    var buffer = LengthBuffer(10000);
+    var encoded = msgpack.encode(buffer);
+    var decoded = msgpack.decode(encoded);
+    
+    var passed = CompareBuffers(buffer, decoded);
+    var tr = document.createElement("tr");
+
+    var td = document.createElement("td");
+    td.textContent = "Array(" + buffer.byteLength + ")";
+    tr.appendChild(td);
+
+    var td = document.createElement("td");
+    td.textContent = msgpack.inspect(encoded);
+    tr.appendChild(td);
+
+    var td = document.createElement("td");
+    td.textContent = "Array(" + decoded.byteLength + ")";
+    tr.appendChild(td);
+
+    tr.setAttribute("class", passed ? "passed" : "failed");
+        
+    body.appendChild(tr);
+    
     </script>
 </body>
 </html>
