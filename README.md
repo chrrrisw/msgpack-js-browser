@@ -6,7 +6,13 @@ A handwritten msgpack encoder and decoder for Browsers
 
 This is a browser port of https://github.com/creationix/msgpack-js
 
-This version now supports the latest specification.
+This version now attempts to support the latest specification.
+
+- 'undefined' is now handled as nil (removing parent project functionality).
+- ArrayBuffers are now handled as bin8/bin16/bin32 (parent project implements them as 0xd8/0xd9 which clash with fixext16 and str8 in new spec)
+- Ext family is decoded as an object with a 'type' and 'data' attribute. They cannot currently be encoded.
+- Strings now use fixstr/str8/str16/str32
+- 64-bit ints are not handled.
 
 The latest spec can be found at <https://github.com/msgpack/msgpack>
 
