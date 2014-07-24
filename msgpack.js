@@ -506,7 +506,7 @@
 
         if (type === "number") {
             // Floating Point
-            if ((value << 0) !== value) {
+            if ((value % 1) !== 0) {
                 view.setUint8(offset, 0xcb);
                 view.setFloat64(offset + 1, value);
                 return 9;
@@ -663,7 +663,7 @@
         if (type === "number") {
             // Floating Point (32 bits)
             // double
-            if (value << 0 !== value)
+            if ((value % 1) !== 0)
                 return 9;
 
             // Integers
