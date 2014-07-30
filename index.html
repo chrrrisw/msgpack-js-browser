@@ -78,7 +78,7 @@ var tests = [
 
     // Get the body of the table
     var body = document.querySelector("tbody");
-    
+
     tests.forEach(function (value) {
         // Encode and decode value
         var buffer = msgpack.encode(value);
@@ -92,28 +92,28 @@ var tests = [
 
         // Create rows and data
         var tr = document.createElement("tr");
-        
+
         var td = document.createElement("td");
         td.textContent = valueString;
         tr.appendChild(td);
-        
+
         td = document.createElement("td");
         td.textContent = msgpack.inspect(buffer);
         tr.appendChild(td);
-        
+
         td = document.createElement("td");
         td.textContent = decodedString;
         tr.appendChild(td);
-        
+
         tr.setAttribute("class", passed ? "passed" : "failed");
-        
+
         body.appendChild(tr);
     });
-    
+
     var buffer = LengthBuffer(10000);
     var encoded = msgpack.encode(buffer);
     var decoded = msgpack.decode(encoded);
-    
+
     var passed = CompareBuffers(buffer, decoded);
     var tr = document.createElement("tr");
 
@@ -130,9 +130,9 @@ var tests = [
     tr.appendChild(td);
 
     tr.setAttribute("class", passed ? "passed" : "failed");
-        
+
     body.appendChild(tr);
-    
+
     </script>
 </body>
 </html>

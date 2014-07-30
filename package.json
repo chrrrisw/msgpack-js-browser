@@ -1,7 +1,7 @@
 {
   "name": "msgpack-js-browser",
-  "version": "0.1.4",
-  "description": "A msgpack encoder and decoder using ArrayBuffer and DataView",
+  "version": "0.1.5",
+  "description": "A msgpack v5 encoder and decoder using ArrayBuffer and DataView",
   "main": "msgpack.js",
   "licenses": [
     {

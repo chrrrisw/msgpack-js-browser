@@ -236,66 +236,69 @@
 
     switch (type) {
 
-      // nil - CRWOK
+      // nil
       case 0xc0:
         this.offset++;
         return null;
 
-      // 0xc1 never used
+      // 0xc1 never used - use for undefined (NON-STANDARD)
+      case 0xc1:
+        this.offset++;
+        return undefined;
 
-      // false - CRWOK
+      // false
       case 0xc2:
         this.offset++;
         return false;
 
-      // true - CRWOK
+      // true
       case 0xc3:
         this.offset++;
         return true;
 
-      // bin 8 - CRWOK
+      // bin 8
       case 0xc4:
         length = this.view.getUint8(this.offset + 1);
         this.offset += 2;
         return this.buf(length);
 
-      // bin 16 - CRWOK
+      // bin 16
       case 0xc5:
         length = this.view.getUint16(this.offset + 1);
         this.offset += 3;
         return this.buf(length);
 
-      // bin 32 - CRWOK
+      // bin 32
       case 0xc6:
         length = this.view.getUint32(this.offset + 1);
         this.offset += 5;
         return this.buf(length);
 
-      // ext 8 - CRWOK
+      // ext 8
       case 0xc7:
         length = this.view.getUint8(this.offset + 1);
         this.offset += 2;
         return this.ext(length);
 
-      // ext 16 - CRWOK
+      // ext 16
       case 0xc8:
         length = this.view.getUint16(this.offset + 1);
         this.offset += 3;
         return this.ext(length);
 
-      // ext 32 - CRWOK
+      // ext 32
       case 0xc9:
         length = this.view.getUint32(this.offset + 1);
         this.offset += 5;
         return this.ext(length);
 
-      // float
+      // float 32
       case 0xca:
         value = this.view.getFloat32(this.offset + 1);
         this.offset += 5;
         return value;
 
-      // double
+      // float 64
       case 0xcb:
         value = this.view.getFloat64(this.offset + 1);
         this.offset += 9;
@@ -321,7 +324,7 @@
 
       // uint 64 - UNHANDLED
       case 0xcf:
-        //CRW value = this.view.getUint64(this.offset + 1);
+        // CRW value = this.view.getUint64(this.offset + 1);
         value = 0;
         this.offset += 9;
         return value;
@@ -351,49 +354,49 @@
         this.offset += 9;
         return value;
 
-      // fixext 1 - CRWOK
+      // fixext 1
       case 0xd4:
         length = 1;
         this.offset++;
         return this.ext(length);
 
-      // fixext 2 - CRWOK
+      // fixext 2
       case 0xd5:
         length = 2;
         this.offset++;
         return this.ext(length);
 
-      // fixext 4 - CRWOK
+      // fixext 4
       case 0xd6:
         length = 4;
         this.offset++;
         return this.ext(length);
 
-      // fixext 8 - CRWOK
+      // fixext 8
       case 0xd7:
         length = 8;
         this.offset++;
         return this.ext(length);
 
-      // fixext 16 - CRWOK
+      // fixext 16
       case 0xd8:
         length = 16;
         this.offset++;
         return this.ext(length);
 
-      // str8 - CRWOK
+      // str8
       case 0xd9:
         length = this.view.getUint8(this.offset + 1);
         this.offset += 2;
         return this.u8str(length);
 
-      // str 16 - CRWOK
+      // str 16
       case 0xda:
         length = this.view.getUint16(this.offset + 1);
         this.offset += 3;
         return this.u8str(length);
 
-      // str 32 - CRWOK
+      // str 32
       case 0xdb:
         length = this.view.getUint32(this.offset + 1);
         this.offset += 5;
@@ -444,14 +447,14 @@
     if (type === "string") {
       var length = utf8ByteCount(value);
 
-      // fixstr - CRWOK
+      // fixstr
       if (length < 0x20) {
         view.setUint8(offset, length | 0xa0);
         utf8Write(view, offset + 1, value);
         return 1 + length;
       }
 
-      // str8 - CRWOK
+      // str8
       if (length < 0x100) {
         view.setUint8(offset, 0xd9);
         view.setUint8(offset + 1, length);
@@ -459,14 +462,14 @@
         return 2 + length;
       }
 
-      // str16 - CRWOK
+      // str16
       if (length < 0x10000) {
         view.setUint8(offset, 0xda);
         view.setUint16(offset + 1, length);
         utf8Write(view, offset + 3, value);
         return 3 + length;
       }
-      // str32 - CRWOK
+      // str32
       if (length < 0x100000000) {
         view.setUint8(offset, 0xdb);
         view.setUint32(offset + 1, length);
@@ -475,7 +478,7 @@
       }
     }
 
-    // There are three: bin8/bin16/bin32
+    // There are three bin types: bin8/bin16/bin32
     if ( value instanceof ArrayBuffer) {
       var length = value.byteLength;
 
@@ -505,7 +508,9 @@
     }
 
     if (type === "number") {
+
       // Floating Point
+      // NOTE: We're always using float64
       if ((value % 1) !== 0) {
         view.setUint8(offset, 0xcb);
         view.setFloat64(offset + 1, value);
@@ -539,6 +544,7 @@
         }
         throw new Error("Number too big 0x" + value.toString(16));
       }
+
       // negative fixnum
       if (value >= -0x20) {
         view.setInt8(offset, value);
@@ -565,15 +571,15 @@
       throw new Error("Number too small -0x" + (-value).toString(16).substr(1));
     }
 
-    // undefined - treat as nil
-    if (type === "undefined") {
+    // null / nil
+    if (value === null) {
       view.setUint8(offset, 0xc0);
       return 1;
     }
 
-    // null / nil
-    if (value === null) {
-      view.setUint8(offset, 0xc0);
+    // undefined - use c1 (NON-STANDARD)
+    if (type === "undefined") {
+      view.setUint8(offset, 0xc1);
       return 1;
     }
 
