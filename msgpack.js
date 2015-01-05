@@ -92,7 +92,7 @@
       }
       // Two byte character
       if ((byte & 0xe0) === 0xc0) {
-        string += String.fromCharCode(((byte & 0x0f) << 6) | (view.getUint8(++i) & 0x3f));
+        string += String.fromCharCode(((byte & 0x1f) << 6) | (view.getUint8(++i) & 0x3f));
         continue;
       }
       // Three byte character
